@@ -1,0 +1,33 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+time = np.genfromtxt("expDat.txt", delimiter=",", dtype=str, usecols=0, skip_header=1)
+data = np.genfromtxt("expDat.txt", delimiter=",", dtype=None, names=True)
+time = [int(num_string.replace('"','')) for num_string in time]
+names = data.dtype.names[1:]
+
+for name in names:
+    plt.plot(time, data[name])
+
+plt.show()
+
+
+
+
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+conv = {0: lambda s: int(str(s).replace('"','').replace('b','').replace("'",''))}
+time = np.genfromtxt("expDat.txt", delimiter=",", dtype=int, converters=conv, usecols=0, skip_header=1)
+
+#time = np.genfromtxt("expDat.txt", delimiter=",", dtype=int, converters=conv, usecols=0, skip_header=1)
+#time = [int(num_string.replace('"','')) for num_string in time]
+data = np.genfromtxt("expDat.txt", delimiter=",", dtype=None, names=True)
+names = data.dtype.names[1:]
+
+for name in names:
+    plt.plot(time, data[name])
+
+plt.show()
