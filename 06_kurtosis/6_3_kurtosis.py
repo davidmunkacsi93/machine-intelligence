@@ -90,7 +90,6 @@ def plotdata(source, mixed, centered, projected, scaled, rotMin, rotMax, kurtDat
     sea.jointplot(x="x", y="y", data=df)
     plt.title('Rotation max kurtosis')
     
-    #df = pd.DataFrame(kurtData, colums=["anlge", "kurt"])
     plt.figure()
     plt.plot(kurtData[0,:], kurtData[1,:], label="Dimension 1")
     plt.plot(kurtData[0,:], kurtData[2,:], label="Dimension 2")
