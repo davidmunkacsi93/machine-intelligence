@@ -49,15 +49,17 @@ def findMinAndMaxKurt(x, angles):
     kurts = np.empty((angles.shape[0],2))
     idx = 0
     for angle in angles:
-        kurt = rotateAndGetKurtosis(scaledNormal, angle)
+        kurt = rotateAndGetKurtosis(x, angle)
         kurts[idx] = kurt
         idx += 1
     
     maxIdx = np.argmax(kurts[:,0])
     minIdx = np.argmin(kurts[:,1])
-    return maxIdx, minIdx
+    kurtPlotData = np.asarray((angles, kurts[:,0], kurts[:,1]))
+    print("kurtPlotData: ", kurtPlotData.shape)
+    return maxIdx, minIdx, kurtPlotData
 
-def plotdata(source, mixed, centered, projected, scaled, rotMin, rotMax):    
+def plotdata(source, mixed, centered, projected, scaled, rotMin, rotMax, kurtData):    
     # Plotting the results.
  
     df = pd.DataFrame(source, columns=["x", "y"])
@@ -87,6 +89,15 @@ def plotdata(source, mixed, centered, projected, scaled, rotMin, rotMax):
     df = pd.DataFrame(rotMax, columns=["x", "y"])
     sea.jointplot(x="x", y="y", data=df)
     plt.title('Rotation max kurtosis')
+    
+    #df = pd.DataFrame(kurtData, colums=["anlge", "kurt"])
+    plt.figure()
+    plt.plot(kurtData[0,:], kurtData[1,:], label="Dimension 1")
+    plt.plot(kurtData[0,:], kurtData[2,:], label="Dimension 2")
+    plt.legend()
+    plt.xlabel('Angle')
+    plt.ylabel('Kurtosis')
+    plt.title("Kurtosis over angle")
 
 def runExercise(x):
     xNormal = mix(x)
@@ -99,12 +110,12 @@ def runExercise(x):
     
     angles = np.arange(0, 2, 1/50)
     angles = angles * math.pi
-    maxIdx, minIdx = findMinAndMaxKurt(scaledNormal, angles)
+    maxIdx, minIdx, kurtData = findMinAndMaxKurt(scaledNormal, angles)
     
     rotNormMax = rotate(scaledNormal.T, angles[maxIdx])
     rotNormMin = rotate(scaledNormal.T, angles[minIdx])
     
-    plotdata(normal.T, xNormal.T, xNormalCentered, projectedNormalCentered, scaledNormal, rotNormMin.T, rotNormMax.T)
+    plotdata(normal.T, xNormal.T, xNormalCentered, projectedNormalCentered, scaledNormal, rotNormMin.T, rotNormMax.T, kurtData)
     plt.show()
 
 print("Normal")
