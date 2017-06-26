@@ -1,125 +1,70 @@
 import numpy as np
-import scipy as scipy
-import scipy.io as io
-from sklearn.decomposition import PCA
-from sklearn import preprocessing as pre
 import math
-import matplotlib.pyplot as plt
-import seaborn as sea
-import pandas as pd
 
-#load data from mat file
-distrib = io.loadmat("distrib.mat")
+numNodes = 6
 
-normal = distrib.get("normal")
-uniform = distrib.get("uniform")
-laplacian = distrib.get("laplacian")
+# W from exercise 8.1
+W = 100 * np.random.rand(numNodes, numNodes) - 50
+W = W + W.T
+np.fill_diagonal(W, 0)
+#print(W)
+#print(W[0,:])
 
-# a) apply mixing
-def mix(x):
-    A = np.asarray([[4,3],[2,1]])
-    return np.dot(A,x)
+# 8.2 Initialization
+def init(numNodes):
+    beta = 1
+    tau = 1.25
+    t_max = 250
+    eps = 1e-4
+    state = 2 * np.random.rand(numNodes) - 1
+    return beta, tau, t_max, eps, state
 
-# b) center to zero mean 
-def center(x):
-    return x - x.mean(axis=1, keepdims=True)
+beta, tau, t_max, eps, initstate = init(6)
+#print ("state: ",state)
 
-# c) apply PCA and project data onto PC
-def applyPCA(x):
-    pca = PCA()
-    pca.fit(x)
-    return pca.transform(x)
+# 8.2 Optimization
+historyBetaEnergy = np.empty((2,0))
 
-# d) scale data to unit variance
-def scale(x):
-    return pre.maxabs_scale(x)
+def calculateEnergy():
+    en = 0
+    for i in range(numNodes):
+        for j in range (numNodes):
+            en += -0.5 * W[i,j] * state[i] * state[j]
+    return en
 
-# e rotate data
-def rotate(x, angle): # x of shape (2,n)
-    R = np.asarray([[math.cos(angle), -math.sin(angle)],[math.sin(angle), math.cos(angle)]])
-    return np.dot(R, x)
+def saveBetaAndEnergy():
+    energy = calculateEnergy()
+#    print("Energy: ", energy)
+#    print(historyBetaEnergy.shape, np.asarray([beta, energy]).reshape((2,1)).shape)
+    global historyBetaEnergy 
+    historyBetaEnergy = np.append(historyBetaEnergy, np.asarray([beta, energy]).reshape((2,1)), axis=1)
+    
+def computeMeanField():
+    E = np.empty((numNodes))
+    for i in range(numNodes):
+        e = 0
+        for j in range(numNodes):
+            e += -W[i,j] * state[j] 
+        np.append(E, e)
+    print("E: ", E)
+    return E
 
-def rotateAndGetKurtosis(x, angle):
-    scaledRot = rotate(x.T, angle).T
-    kurt = scipy.stats.kurtosis(scaledRot)    
-    #print("kurt: ", kurt)
-    return kurt
+def updateState(e):
+    return np.tanh(-beta * e)
 
-def findMinAndMaxKurt(x, angles):
-    kurts = np.empty((angles.shape[0],2))
-    idx = 0
-    for angle in angles:
-        kurt = rotateAndGetKurtosis(x, angle)
-        kurts[idx] = kurt
-        idx += 1
-    
-    maxIdx = np.argmax(kurts[:,0])
-    minIdx = np.argmin(kurts[:,1])
-    kurtPlotData = np.asarray((angles, kurts[:,0], kurts[:,1]))
-    print("kurtPlotData: ", kurtPlotData.shape)
-    return maxIdx, minIdx, kurtPlotData
 
-def plotdata(source, mixed, centered, projected, scaled, rotMin, rotMax, kurtData):    
-    # Plotting the results.
- 
-    df = pd.DataFrame(source, columns=["x", "y"])
-    sea.jointplot(x="x", y="y", data=df)
-    plt.title('Sources')
+for t in range(t_max):
+    state = initstate
+    e_new = np.zeros((numNodes))
+    e_old = np.ones((numNodes)) * eps + 0.1
+    while (np.linalg.norm(e_old - e_new) > eps ):
+        e_old = e_new
+        e_new = computeMeanField()
+        state = updateState(e_new)
+        saveBetaAndEnergy()
+        beta = beta * tau
+        print(np.linalg.norm(e_old - e_new))
     
-    df = pd.DataFrame(mixed, columns=["x", "y"])
-    sea.jointplot(x="x", y="y", data=df)
-    plt.title('Mixed')
-    
-    df = pd.DataFrame(centered, columns=["x", "y"])
-    sea.jointplot(x="x", y="y", data=df)
-    plt.title('Centered')
-    
-    df = pd.DataFrame(projected, columns=["x", "y"])
-    sea.jointplot(x="x", y="y", data=df)
-    plt.title('Projected')
-    
-    df = pd.DataFrame(scaled, columns=["x", "y"])
-    sea.jointplot(x="x", y="y", data=df)
-    plt.title('Scaled')
-    
-    df = pd.DataFrame(rotMin, columns=["x", "y"])
-    sea.jointplot(x="x", y="y", data=df)
-    plt.title('Rotation min kurtosis')
-    
-    df = pd.DataFrame(rotMax, columns=["x", "y"])
-    sea.jointplot(x="x", y="y", data=df)
-    plt.title('Rotation max kurtosis')
-    
-    plt.figure()
-    plt.plot(kurtData[0,:], kurtData[1,:], label="Dimension 1")
-    plt.plot(kurtData[0,:], kurtData[2,:], label="Dimension 2")
-    plt.legend()
-    plt.xlabel('Angle')
-    plt.ylabel('Kurtosis')
-    plt.title("Kurtosis over angle")
+print(historyBetaEnergy)
 
-def runExercise(x):
-    xNormal = mix(x)
-    xNormalCentered = center(xNormal)
-    # transpose data for further processing
-    xNormalCentered = xNormalCentered.T
-    
-    projectedNormalCentered = applyPCA(xNormalCentered)
-    scaledNormal = scale(projectedNormalCentered)
-    
-    angles = np.arange(0, 2, 1/50)
-    angles = angles * math.pi
-    maxIdx, minIdx, kurtData = findMinAndMaxKurt(scaledNormal, angles)
-    
-    rotNormMax = rotate(scaledNormal.T, angles[maxIdx])
-    rotNormMin = rotate(scaledNormal.T, angles[minIdx])
-    
-    plotdata(normal.T, xNormal.T, xNormalCentered, projectedNormalCentered, scaledNormal, rotNormMin.T, rotNormMax.T, kurtData)
-    plt.show()
-
-print("Normal")
-runExercise(normal)
-print("Uniform")
-runExercise(uniform)
-print("Laplacian")
-runExercise(laplacian)
+#plotData()
