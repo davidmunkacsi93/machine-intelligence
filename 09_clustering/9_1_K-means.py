@@ -59,7 +59,7 @@ def plotErrorFuntion(Err, k, tmax):
     plt.xlabel('Iteration')
     plt.ylabel('error')
     plt.title('K = %d' % k + ' Error function')
-    plt.show
+    plt.show()
 
 # got through different numbers of prototypes
 # when prototypes are distributed in such a way that no datapoints are assigned
@@ -73,15 +73,18 @@ for k in range(2,9):
     for t in range(tmax):
         mq = assignDatapoints(wq, k)
         wq = choosePrototypes(mq)
-        #plot(k, t)
-        #plt.show
+        plot(k, t)
+        plt.show()
         Err.append(calculateError(mq, wq, dataSet))
     
     plotErrorFuntion(Err, k, tmax)
 # compute Voronoi tesselation
     if k > 3:
-        vor = Voronoi(wq.T)
-        voronoi_plot_2d(vor)
-print('Done.')
+        try:
+            vor = Voronoi(wq.T)
+            voronoi_plot_2d(vor)
+        except:
+            print("NAN in prototypes.")
+plt.show()
     
 
