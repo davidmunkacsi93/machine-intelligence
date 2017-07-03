@@ -1,5 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+from scipy.spatial import Voronoi, voronoi_plot_2d
+
 
 ## 9.1 K-means Clustering
 dataSet = np.loadtxt('./cluster.dat')
@@ -22,9 +25,9 @@ def assignDatapoints(wq, k):
     mq[rows, mqIdx] = 1
     return mq
 
-
+# division with 0 if no datapoint is assigned to one prototype
 def choosePrototypes(mq):
-    print(np.sum(mq, axis=0))
+#    print(np.sum(mq, axis=0))
     wqNew = np.dot(dataSet, mq) / np.sum(mq, axis=0)
     return wqNew
 
@@ -38,12 +41,47 @@ def plot(k, t):
     plt.ylabel('y')
     plt.title('K = %d' % k + ', Iteration %d' %t)
 
+# calculate error
+def calculateError(mq, wq, dataSet):
+    p = dataSet.shape[1]
+    diff = dataSet[np.newaxis,...] - wq[np.newaxis,...].T
+    nor2 = np.square(np.linalg.norm(diff, axis=1))
+    err = mq*nor2.T
+    err_sum = np.sum(err) / (2 * p)
+#    print("sums ", err_sum)
+    return err_sum
+
+# plot error function
+def plotErrorFuntion(Err, k, tmax):
+    ax = plt.figure().gca()
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    plt.plot(np.arange(1,tmax + 1), Err, '-')
+    plt.xlabel('Iteration')
+    plt.ylabel('error')
+    plt.title('K = %d' % k + ' Error function')
+    plt.show
+
+# got through different numbers of prototypes
+# when prototypes are distributed in such a way that no datapoints are assigned
+# to a prototype, then the algoithm fails --> division with 0
 for k in range(2,9):
     wqInit, tmax = init(k)
     wq = np.copy(wqInit)
+ #   print(k)
+    Err = []
 
     for t in range(tmax):
         mq = assignDatapoints(wq, k)
         wq = choosePrototypes(mq)
-        plot(k, t)
-        plt.show
+        #plot(k, t)
+        #plt.show
+        Err.append(calculateError(mq, wq, dataSet))
+    
+    plotErrorFuntion(Err, k, tmax)
+# compute Voronoi tesselation
+    if k > 3:
+        vor = Voronoi(wq.T)
+        voronoi_plot_2d(vor)
+print('Done.')
+    
+
