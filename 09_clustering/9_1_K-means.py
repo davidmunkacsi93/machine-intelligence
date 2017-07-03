@@ -7,7 +7,7 @@ dataMean = dataSet.mean(axis=1).reshape((2,1))
 
 # Init
 def init(k):
-    wqInit = (np.random.rand(2,k) - dataMean - 0.5) * 3
+    wqInit = ((np.random.rand(2,k) - 0.5 ) * 2 + dataMean)
     tmax = 5
     return wqInit, tmax
 
@@ -35,7 +35,7 @@ def plot(k, t):
     plt.scatter(wqInit[0], wqInit[1], color='black')
     plt.scatter(wq[0], wq[1], color='red')
     plt.xlabel('x')
-    plt.xlabel('y')
+    plt.ylabel('y')
     plt.title('K = %d' % k + ', Iteration %d' %t)
 
 for k in range(2,9):
