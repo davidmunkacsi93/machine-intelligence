@@ -1,12 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
-from scipy.spatial import Voronoi, voronoi_plot_2d
-
 import pandas as pd
-from pandas import DataFrame
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
 # 10.2
 # a) Load and show
@@ -23,23 +17,19 @@ plt.show()
 # b)
 # adapt SOM
 K = np.asarray([16, 32, 64, 128])
-eps = 0.2
-tau = 0.9999
-sig = 0.5
+eps = 0.25
+tau = 0.9
+sig = 2
 
 tmax = df.shape[0]
 sfdIndices = np.random.permutation(tmax)
-dataSet = np.asarray([df['x'], df['z'], df['y']])
-print(dataSet.shape)
-
-# TODO: do SOM stuff
+dataSet = np.asarray([df['x'], df['y'], df['z']])
 
 # c)
 # init map as line
 def init_line(k):
     wq = np.zeros([3, k])
     wq[2] = np.linspace(0.0, 5.0, num=k)
-    print(wq.shape, k)
     return wq
 
 def assignDatapoint(x, wq):
@@ -73,16 +63,15 @@ def doAnnealing(k, initMap, eps, sig):
     wq = initMap
     for t in range(tmax):
         #assign datapoint to prototype
-        idx = assignDatapoint(dataSet[:,sfdIndices[t % tmax]], wq)
+        idx = assignDatapoint(dataSet[:,sfdIndices[t]], wq)
         
         #update prototype locations
-        wq = updatePrototypes(wq, dataSet[:,sfdIndices[t % tmax]], idx, eps, sig)
+        wq = updatePrototypes(wq, dataSet[:,sfdIndices[t]], idx, eps, sig)
 
         #anneal epsilon and sigma
         eps = annealParam(eps, tau, t, tmax)
         sig = annealParam(sig, tau, t, tmax)
-    print(wq.shape)
-    return wq, eps, sig
+    return wq
 
 def plotMap(finalMap, k):
     fig = plt.figure().gca(projection='3d')
@@ -97,6 +86,6 @@ def plotMap(finalMap, k):
 
 for k in K:
     initMap = init_line(k)
-    finalMap, eps, sig = doAnnealing(k, initMap, eps, sig)
+    finalMap = doAnnealing(k, initMap, eps, sig)
     plotMap(finalMap, k)
 

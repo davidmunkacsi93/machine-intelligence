@@ -36,7 +36,7 @@ def calcNeighborhoodFunction(w,q,p,sig):
     return np.exp(inp)
 
 def annealParam(eps,tau, tcurr, tmax):
-    if t > tmax/4:
+    if tcurr > tmax/4:
         eps = tau * eps
     return eps
 
